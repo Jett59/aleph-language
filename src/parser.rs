@@ -1,7 +1,7 @@
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{alpha1, digit1, multispace0},
+    character::complete::{alpha1, char, digit1, multispace0},
     combinator::map_res,
     error::ParseError,
     multi::{fold_many1, many0, separated_list0},
@@ -24,6 +24,11 @@ pub enum Expression {
     Multiply(Box<Expression>, Box<Expression>),
     Divide(Box<Expression>, Box<Expression>),
     Power(Box<Expression>, Box<Expression>),
+
+    ApplyFunction {
+        function: Box<Expression>,
+        arguments: Vec<Expression>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -98,15 +103,31 @@ fn parse_expression(input: &str) -> IResult<&str, Expression> {
 
     let mut atomic_expression = integer_parser.or(variable_parser).or(bracketed_expression);
 
+    let mut possibly_apply_parser = move |input| {
+        let (input, first) = atomic_expression.parse(input)?;
+        with_whitespace(char('('))
+            .and(separated_list0(
+                with_whitespace(char(',')),
+                parse_expression,
+            ))
+            .and(with_whitespace(char(')')))
+            .map(|((_, arguments), _)| Expression::ApplyFunction {
+                function: Box::new(first.clone()),
+                arguments,
+            })
+            .parse(input)
+            .or_else(|_| Ok((input, first)))
+    };
+
     // TODO: switch to a right-associative parser
     let mut possibly_power_parser = move |input| {
         left_associative_operator_parser(
             "^",
-            &mut atomic_expression,
+            &mut possibly_apply_parser,
             |lhs, rhs| Expression::Power(Box::new(lhs), Box::new(rhs)),
             input,
         )
-        .or_else(|_| atomic_expression.parse(input))
+        .or_else(|_| possibly_apply_parser.parse(input))
     };
 
     let mut possibly_divide_parser = move |input| {
