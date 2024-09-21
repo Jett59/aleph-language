@@ -1,0 +1,3 @@
+f : Natural -> Natural
+
+g : Real -> Real
