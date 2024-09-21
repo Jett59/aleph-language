@@ -1,3 +1,5 @@
 f : Natural -> Natural
 
+f(x) = (x - 1 + 1*x*2)^2
+
 g : Real -> Real
