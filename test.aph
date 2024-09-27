@@ -5,4 +5,4 @@ g : Real -> Real
 g(x, y) = x + y
 
 h : Complex -> Real
-h(x) = re(x)^2 + im(x)^2
+h(x) = re(x*2)^2 + g(im(x), 1)

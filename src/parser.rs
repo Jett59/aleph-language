@@ -94,7 +94,7 @@ fn left_associative_operator_parser<'a, Error: ParseError<&'a str>>(
     .parse(input)
 }
 
-fn parse_expression(input: &str) -> IResult<&str, Expression> {
+pub fn parse_expression(input: &str) -> IResult<&str, Expression> {
     let integer_parser = with_whitespace(map_res(digit1, |s: &str| {
         s.parse::<i64>().map(Expression::Integer)
     }));
