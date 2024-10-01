@@ -38,6 +38,12 @@ pub enum RuntimeError {
     },
 }
 
+const REAL_PRECISION: usize = 100;
+
+fn create_real(integer: i64) -> FBig {
+    FBig::from(integer).with_precision(REAL_PRECISION).value()
+}
+
 fn safe_division(a: FBig, b: FBig) -> Result<FBig, RuntimeError> {
     if b == FBig::<mode::Zero>::ZERO {
         Err(RuntimeError::DivisionByZero)
@@ -52,12 +58,12 @@ fn safe_power(base: &Value, exponent: &Value) -> Result<Value, RuntimeError> {
             if *base >= 0 && *exponent >= 0 {
                 (*exponent as u64)
                     .try_into()
-                    .map_err(|_|())
+                    .map_err(|_| ())
                     .and_then(|exponent| base.checked_pow(exponent).ok_or(()))
                     .map(Value::SmallInt)
-                    .unwrap_or_else(|_| Value::Real(FBig::from(*base).powi((*exponent).into())))
+                    .unwrap_or_else(|_| Value::Real(create_real(*base).powi((*exponent).into())))
             } else {
-                Value::Real(FBig::from(*base).powi((*exponent).into()))
+                Value::Real(create_real(*base).powi((*exponent).into()))
             }
         }
         (Value::Real(base), Value::Real(exponent)) => Value::Real(base.powf(exponent)),
@@ -65,7 +71,7 @@ fn safe_power(base: &Value, exponent: &Value) -> Result<Value, RuntimeError> {
             Value::Real(base.powi((*exponent).into()))
         }
         (Value::SmallInt(base), Value::Real(exponent)) => {
-            Value::Real(FBig::from(*base).powf(exponent))
+            Value::Real(create_real(*base).powf(exponent))
         }
         (base, exponent) => {
             return Err(RuntimeError::TypeMismatch {
@@ -104,10 +110,10 @@ impl Value {
                     (Value::SmallInt(a), Value::SmallInt(b)) => a
                         .checked_add(b)
                         .map(Value::SmallInt)
-                        .unwrap_or_else(|| Value::Real(FBig::from(a) + FBig::from(b))),
+                        .unwrap_or_else(|| Value::Real(create_real(a) + create_real(b))),
                     (Value::Real(a), Value::Real(b)) => Value::Real(a + b),
-                    (Value::Real(a), Value::SmallInt(b)) => Value::Real(a + FBig::from(b)),
-                    (Value::SmallInt(a), Value::Real(b)) => Value::Real(FBig::from(a) + b),
+                    (Value::Real(a), Value::SmallInt(b)) => Value::Real(a + create_real(b)),
+                    (Value::SmallInt(a), Value::Real(b)) => Value::Real(create_real(a) + b),
                     (a, b) => {
                         return Err(RuntimeError::TypeMismatch {
                             first: a.type_name(),
@@ -125,10 +131,10 @@ impl Value {
                     (Value::SmallInt(a), Value::SmallInt(b)) => a
                         .checked_sub(b)
                         .map(Value::SmallInt)
-                        .unwrap_or_else(|| Value::Real(FBig::from(a) - FBig::from(b))),
+                        .unwrap_or_else(|| Value::Real(create_real(a) - create_real(b))),
                     (Value::Real(a), Value::Real(b)) => Value::Real(a - b),
-                    (Value::Real(a), Value::SmallInt(b)) => Value::Real(a - FBig::from(b)),
-                    (Value::SmallInt(a), Value::Real(b)) => Value::Real(FBig::from(a) - b),
+                    (Value::Real(a), Value::SmallInt(b)) => Value::Real(a - create_real(b)),
+                    (Value::SmallInt(a), Value::Real(b)) => Value::Real(create_real(a) - b),
                     (a, b) => {
                         return Err(RuntimeError::TypeMismatch {
                             first: a.type_name(),
@@ -146,10 +152,10 @@ impl Value {
                     (Value::SmallInt(a), Value::SmallInt(b)) => a
                         .checked_mul(b)
                         .map(Value::SmallInt)
-                        .unwrap_or_else(|| Value::Real(FBig::from(a) * FBig::from(b))),
+                        .unwrap_or_else(|| Value::Real(create_real(a) * create_real(b))),
                     (Value::Real(a), Value::Real(b)) => Value::Real(a * b),
-                    (Value::Real(a), Value::SmallInt(b)) => Value::Real(a * FBig::from(b)),
-                    (Value::SmallInt(a), Value::Real(b)) => Value::Real(FBig::from(a) * b),
+                    (Value::Real(a), Value::SmallInt(b)) => Value::Real(a * create_real(b)),
+                    (Value::SmallInt(a), Value::Real(b)) => Value::Real(create_real(a) * b),
                     (a, b) => {
                         return Err(RuntimeError::TypeMismatch {
                             first: a.type_name(),
@@ -165,14 +171,14 @@ impl Value {
                     Value::evaluate(variables, b)?,
                 ) {
                     (Value::SmallInt(a), Value::SmallInt(b)) => {
-                        Value::Real(safe_division(FBig::from(a), FBig::from(b))?)
+                        Value::Real(safe_division(create_real(a), create_real(b))?)
                     }
                     (Value::Real(a), Value::Real(b)) => Value::Real(a / b),
                     (Value::Real(a), Value::SmallInt(b)) => {
-                        Value::Real(safe_division(a, FBig::from(b))?)
+                        Value::Real(safe_division(a, create_real(b))?)
                     }
                     (Value::SmallInt(a), Value::Real(b)) => {
-                        Value::Real(safe_division(FBig::from(a), b)?)
+                        Value::Real(safe_division(create_real(a), b)?)
                     }
                     (a, b) => {
                         return Err(RuntimeError::TypeMismatch {
