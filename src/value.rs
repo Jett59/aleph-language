@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, fmt::{self, Display, Formatter}};
 
 use dashu_float::{round::mode, FBig};
 
@@ -183,7 +183,11 @@ impl Value {
                     Value::evaluate(variables, b)?,
                 ) {
                     (Value::SmallInt(a), Value::SmallInt(b)) => {
-                        Value::Real(safe_division(create_real(a), create_real(b))?)
+                        if b != 0 && a % b == 0 {
+                            Value::SmallInt(a / b)
+                        } else {
+                            Value::Real(safe_division(create_real(a), create_real(b))?)
+                        }
                     }
                     (Value::Real(a), Value::Real(b)) => Value::Real(a / b),
                     (Value::Real(a), Value::SmallInt(b)) => {
@@ -236,5 +240,41 @@ impl Value {
                 Value::evaluate(&new_variables, &function.body)?
             }
         })
+    }
+}
+
+impl Display for Value {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Value::SmallInt(value) => write!(f, "{}", value),
+            Value::Real(value) => write!(f, "{}", value.to_decimal().value()),
+            Value::Function(_) => write!(f, "<function>"),
+        }
+    }
+}
+
+impl Display for RuntimeError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            RuntimeError::UnboundVariable(name) => write!(f, "Unbound variable: {}", name),
+            RuntimeError::InvalidType { found, operation } => {
+                write!(f, "Invalid type: {} for operation {}", found, operation)
+            }
+            RuntimeError::TypeMismatch {
+                first,
+                last,
+                operation,
+            } => write!(
+                f,
+                "Type mismatch: {} {} {}",
+                first, operation, last
+            ),
+            RuntimeError::DivisionByZero => write!(f, "Division by zero"),
+            RuntimeError::ParameterMismatch { expected, found } => write!(
+                f,
+                "Parameter mismatch: expected {} arguments, found {}",
+                expected, found
+            ),
+        }
     }
 }

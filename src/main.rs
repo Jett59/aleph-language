@@ -36,6 +36,9 @@ fn main() {
         std::io::stdin().read_line(&mut input).unwrap();
         let (_, expression) = parse_expression(&input).unwrap();
         let result = Value::evaluate(&variables, &expression);
-        println!("{:?}", result);
+        match result {
+            Ok(value) => println!("{}", value),
+            Err(e) => eprintln!("error: {}", e),
+        }
     }
 }
