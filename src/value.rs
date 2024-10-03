@@ -102,6 +102,18 @@ impl Value {
                 .get(name)
                 .ok_or(RuntimeError::UnboundVariable(name.clone()))?
                 .clone(),
+                Expression::Negate(a) => {
+                match Value::evaluate(variables, a)? {
+                    Value::SmallInt(a) => Value::SmallInt(-a),
+                    Value::Real(a) => Value::Real(-a),
+                    a => {
+                        return Err(RuntimeError::InvalidType {
+                            found: a.type_name(),
+                            operation: "negate".to_string(),
+                        })
+                    }
+                }
+            }
             Expression::Add(a, b) => {
                 match (
                     Value::evaluate(variables, a)?,

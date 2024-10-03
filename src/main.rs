@@ -7,22 +7,28 @@ mod parser;
 mod value;
 
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    let file_name = &args[1];
-    let input = std::fs::read_to_string(file_name).unwrap();
-    let (_, top_level) = parse_top_level(&input).unwrap();
-    println!("{:?}", top_level);
     let mut variables = BTreeMap::new();
-    for item in top_level {
-        match item {
-            TopLevelStatement::FunctionDefinition { name, parameters, body } => {
-                variables.insert(name.clone(), Value::Function(value::Function {
-                    name,
-                    parameter_names: parameters,
-                    body,
-                }));
+    let args: Vec<String> = std::env::args().collect();
+    for file_name in &args[1..] {
+        let input = std::fs::read_to_string(file_name).unwrap();
+        let (_, top_level) = parse_top_level(&input).unwrap();
+        println!("{:?}", top_level);
+        for item in top_level {
+            if let TopLevelStatement::FunctionDefinition {
+                name,
+                parameters,
+                body,
+            } = item
+            {
+                variables.insert(
+                    name.clone(),
+                    Value::Function(value::Function {
+                        name,
+                        parameter_names: parameters,
+                        body,
+                    }),
+                );
             }
-            _ => {}
         }
     }
     loop {
@@ -31,5 +37,5 @@ fn main() {
         let (_, expression) = parse_expression(&input).unwrap();
         let result = Value::evaluate(&variables, &expression);
         println!("{:?}", result);
-            }
+    }
 }

@@ -19,6 +19,7 @@ pub enum Expression {
     Integer(i64),
     Variable(String),
 
+    Negate(Box<Expression>),
     Add(Box<Expression>, Box<Expression>),
     Subtract(Box<Expression>, Box<Expression>),
     Multiply(Box<Expression>, Box<Expression>),
@@ -101,7 +102,11 @@ pub fn parse_expression(input: &str) -> IResult<&str, Expression> {
     let variable_parser = with_whitespace(parse_name).map(|s| Expression::Variable(s.to_string()));
     let bracketed_expression = with_whitespace(delimited(tag("("), parse_expression, tag(")")));
 
-    let mut atomic_expression = integer_parser.or(variable_parser).or(bracketed_expression);
+    let negative_expression = with_whitespace(char('-'))
+        .and(parse_expression)
+        .map(|(_, expression)| Expression::Negate(Box::new(expression)));
+
+    let mut atomic_expression = integer_parser.or(variable_parser).or(bracketed_expression).or(negative_expression);
 
     let mut possibly_apply_parser = move |input| {
         let (input, first) = atomic_expression.parse(input)?;
